@@ -843,12 +843,12 @@ if not st.session_state.logged_in:
         if st.button("🔐 LOGIN", use_container_width=True, 
                     type="primary" if st.session_state.auth_page == "login" else "secondary"):
             st.session_state.auth_page = "login"
-            st.experimental_rerun()
+            st.rerun()
     with col2:
         if st.button("📝 SIGN UP", use_container_width=True,
                     type="primary" if st.session_state.auth_page == "signup" else "secondary"):
             st.session_state.auth_page = "signup"
-            st.experimental_rerun()
+            st.rerun()
     
     st.markdown("<br>", unsafe_allow_html=True)
     
@@ -866,7 +866,7 @@ if not st.session_state.logged_in:
                     if success:
                         st.success(message)
                         time.sleep(1)
-                        st.experimental_rerun()
+                        st.rerun()
                     else:
                         st.error(message)
                 else:
@@ -893,7 +893,7 @@ if not st.session_state.logged_in:
                         st.success(message)
                         st.session_state.auth_page = "login"
                         time.sleep(2)
-                        st.experimental_rerun()
+                        st.rerun()
                     else:
                         st.error(message)
     
@@ -910,7 +910,7 @@ else:
         
         if st.button(button_text, key="theme_toggle", use_container_width=True):
             st.session_state.theme = 'dark' if current_theme == 'light' else 'light'
-            st.experimental_rerun()
+            st.rerun()
         
         st.markdown("---")
         
@@ -937,12 +937,12 @@ else:
                     st.session_state.show_delete_confirmation = False
                     st.session_state.selected_forecast_to_delete = None
                     st.success("✅ Deleted!")
-                    st.experimental_rerun()
+                    st.rerun()
             with col2:
                 if st.button("❌ NO", key="cancel_delete", use_container_width=True):
                     st.session_state.show_delete_confirmation = False
                     st.session_state.selected_forecast_to_delete = None
-                    st.experimental_rerun()
+                    st.rerun()
         
         # Profile card
         st.markdown(f"""
@@ -976,12 +976,12 @@ else:
         
         if st.button(forecast_text, key="sidebar_forecast_btn", use_container_width=True):
             st.session_state.show_forecast_history = not st.session_state.show_forecast_history
-            st.experimental_rerun()
+            st.rerun()
         
         # LOGOUT BUTTON
         if st.button("🚪 Logout", key="sidebar_logout_btn", use_container_width=True):
             st.session_state.logout_trigger = True
-            st.experimental_rerun()
+            st.rerun()
         
         st.markdown("---")
         
@@ -1038,7 +1038,7 @@ else:
                     if st.button("🗑️ DELETE", key=f"sidebar_delete_{i}", use_container_width=True):
                         st.session_state.selected_forecast_to_delete = original_idx
                         st.session_state.show_delete_confirmation = True
-                        st.experimental_rerun()
+                        st.rerun()
                 
                 st.markdown("</div>", unsafe_allow_html=True)
         
@@ -1068,7 +1068,7 @@ else:
     
     if st.session_state.logout_trigger:
         logout_user()
-        st.experimental_rerun()
+        st.rerun()
     
     if st.session_state.show_forecast_history and len(st.session_state.forecast_history) > 0:
         with st.expander("📋 Forecast History", expanded=True):
@@ -1115,7 +1115,7 @@ else:
             
             if st.button("Close History", use_container_width=True):
                 st.session_state.show_forecast_history = False
-                st.experimental_rerun()
+                st.rerun()
     
     st.markdown("---")
     
@@ -1132,7 +1132,7 @@ else:
             st.session_state.data_source = "sample"
             st.session_state.data_loaded = True
             st.session_state.using_sample_data = True
-            st.experimental_rerun()
+            st.rerun()
     with col3:
         if st.button("🗑️ Clear", use_container_width=True):
             st.session_state.data_loaded = False
@@ -1141,7 +1141,7 @@ else:
             st.session_state.using_sample_data = False
             st.session_state.data_cleaned = False
             st.session_state.last_forecast_result = None
-            st.experimental_rerun()
+            st.rerun()
     
     if st.session_state.data_loaded and st.session_state.df is not None:
         df_current = st.session_state.df
@@ -1364,35 +1364,35 @@ else:
                                 type="primary" if st.session_state.viz_chart_type == "Line Chart" else "secondary",
                                 use_container_width=True):
                         st.session_state.viz_chart_type = "Line Chart"
-                        st.experimental_rerun()
+                        st.rerun()
                 
                 with col_c2:
                     if st.button("📊 Bar", key="btn_bar",
                                 type="primary" if st.session_state.viz_chart_type == "Bar Chart" else "secondary",
                                 use_container_width=True):
                         st.session_state.viz_chart_type = "Bar Chart"
-                        st.experimental_rerun()
+                        st.rerun()
                 
                 with col_c3:
                     if st.button("⚡ Scatter", key="btn_scatter",
                                 type="primary" if st.session_state.viz_chart_type == "Scatter Plot" else "secondary",
                                 use_container_width=True):
                         st.session_state.viz_chart_type = "Scatter Plot"
-                        st.experimental_rerun()
+                        st.rerun()
                 
                 with col_c4:
                     if st.button("📊 Histogram", key="btn_hist",
                                 type="primary" if st.session_state.viz_chart_type == "Histogram" else "secondary",
                                 use_container_width=True):
                         st.session_state.viz_chart_type = "Histogram"
-                        st.experimental_rerun()
+                        st.rerun()
                 
                 with col_c5:
                     if st.button("📦 Box", key="btn_box",
                                 type="primary" if st.session_state.viz_chart_type == "Box Plot" else "secondary",
                                 use_container_width=True):
                         st.session_state.viz_chart_type = "Box Plot"
-                        st.experimental_rerun()
+                        st.rerun()
                 
                 fig = go.Figure()
                 
@@ -2042,7 +2042,7 @@ else:
                         if st.button(f"🗑️ DELETE", key=f"main_delete_{i}", use_container_width=True):
                             st.session_state.selected_forecast_to_delete = original_idx
                             st.session_state.show_delete_confirmation = True
-                            st.experimental_rerun()
+                            st.rerun()
             else:
                 st.info("No forecast history yet. Run a forecast to see results here.")
             
@@ -2056,7 +2056,7 @@ else:
                         users[st.session_state.username]['forecast_history'] = []
                         users[st.session_state.username]['forecast_count'] = 0
                         save_users(users)
-                    st.experimental_rerun()
+                    st.rerun()
             
             st.markdown('</div>', unsafe_allow_html=True)
 
