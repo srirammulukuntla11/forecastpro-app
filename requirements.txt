@@ -1,19 +1,10 @@
-# Core ML
-pandas==2.2.0
-numpy==1.26.3
-scikit-learn==1.4.0
-statsmodels==0.14.1
-
-# Web Framework
-streamlit==1.31.0
-
-# Visualization
-plotly==5.18.0
-
-# File Handling
-openpyxl==3.1.2
-xlrd==2.0.1
-chardet==5.2.0
-
-# Utilities
-python-dateutil==2.9.0
+pandas
+numpy
+scikit-learn
+statsmodels
+streamlit
+plotly
+openpyxl
+xlrd
+chardet
+python-dateutil
