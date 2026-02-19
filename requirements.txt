@@ -1,5 +1,19 @@
-pandas
-numpy
-matplotlib
-seaborn
-scikit-learn
+# Core ML
+pandas==1.5.3
+numpy==1.23.5
+scikit-learn==1.2.2
+statsmodels==0.14.0
+
+# Web Framework
+streamlit==1.25.0
+
+# Visualization
+plotly==5.14.1
+
+# File Handling
+openpyxl==3.1.2
+xlrd==2.0.1
+chardet==5.1.0
+
+# Utilities
+python-dateutil==2.8.2
