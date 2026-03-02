@@ -36,7 +36,7 @@ import model
 if 'theme' not in st.session_state:
     st.session_state.theme = 'light'
 
-# Theme colors
+# Theme colors - FIXED dark theme for better visibility
 themes = {
     'light': {
         'primary': '#667eea',
@@ -51,7 +51,7 @@ themes = {
         'card_bg': '#f8f9fa',
         'border': '#dee2e6',
         'text': '#1a1f36',
-        'text_secondary': '#6b7280',
+        'text_secondary': '#4a5568',
         'delete': '#dc2626',
         'delete_hover': '#b91c1c',
         'gradient_start': '#667eea',
@@ -65,12 +65,12 @@ themes = {
         'info': '#60a5fa',
         'light': '#2d3748',
         'dark': '#f7fafc',
-        'gray': '#9ca3af',
-        'background': '#1a1f36',
-        'card_bg': '#2d3748',
-        'border': '#4a5568',
-        'text': '#f7fafc',
-        'text_secondary': '#9ca3af',
+        'gray': '#cbd5e0',
+        'background': '#0f172a',
+        'card_bg': '#1e293b',
+        'border': '#334155',
+        'text': '#ffffff',
+        'text_secondary': '#cbd5e0',
         'delete': '#ef4444',
         'delete_hover': '#dc2626',
         'gradient_start': '#818cf8',
@@ -80,6 +80,73 @@ themes = {
 
 # Set current theme colors
 colors = themes[st.session_state.theme]
+
+# ===== LEGEND FUNCTION FOR ALL GRAPHS (FIXED POSITION - RIGHT SIDE) =====
+def create_legend_chart(fig, x_label, y_label):
+    """Apply consistent styling to all charts with legends on RIGHT side"""
+    
+    fig.update_layout(
+        # NO TITLE - removed as requested
+        
+        # Legend styling - NOW AT TOP LEFT INSIDE GRAPH
+        legend={
+            'font': {'size': 11, 'color': colors['text'], 'family': 'Inter, sans-serif'},
+            'bgcolor': 'rgba(0,0,0,0)',  # NO BACKGROUND
+            'bordercolor': 'rgba(0,0,0,0)',  # NO BORDER
+            'borderwidth': 0,
+            'orientation': 'h',  # Horizontal
+            'yanchor': 'top',
+            'y': 1.0,  # At the very top inside graph
+            'xanchor': 'left',
+            'x': 0.02,  # Slightly from left edge
+            'itemclick': 'toggle',
+            'itemdoubleclick': 'toggleothers'
+        },
+        
+        # Axes styling
+        xaxis={
+            'title': {'text': x_label, 'font': {'size': 14, 'color': colors['text']}},
+            'tickfont': {'size': 12, 'color': colors['text_secondary']},
+            'gridcolor': colors['border'],
+            'showline': True,
+            'linecolor': colors['border'],
+            'mirror': True,
+            'zeroline': False
+        },
+        
+        yaxis={
+            'title': {'text': y_label, 'font': {'size': 14, 'color': colors['text']}},
+            'tickfont': {'size': 12, 'color': colors['text_secondary']},
+            'gridcolor': colors['border'],
+            'showline': True,
+            'linecolor': colors['border'],
+            'mirror': True,
+            'zeroline': False
+        },
+        
+        # Hover tooltip
+        hoverlabel={
+            'bgcolor': colors['card_bg'],
+            'font': {'size': 12, 'color': colors['text'], 'family': 'Inter, sans-serif'},
+            'bordercolor': colors['primary'],
+            'namelength': 30
+        },
+        
+        # Background
+        paper_bgcolor='rgba(0,0,0,0)',
+        plot_bgcolor='rgba(0,0,0,0)',
+        
+        # Size
+        height=500,
+        
+        # Hover mode
+        hovermode='x unified',
+        
+        # Margin to make room for legend on right
+        margin={'t': 30, 'b': 50, 'l': 50, 'r': 120}  # Extra right margin for legend
+    )
+    
+    return fig
 
 # ===== DEPLOYMENT-SAFE FILE HANDLING =====
 DATA_DIR = Path("/tmp") if os.name != 'nt' else Path(".")
@@ -298,7 +365,7 @@ def clean_dataset(df):
     
     return df_clean, cleaning_actions
 
-# ===== CUSTOM CSS WITH THEME SUPPORT =====
+# ===== CUSTOM CSS WITH THEME SUPPORT - FIXED DARK MODE =====
 st.markdown(f"""
 <style>
     @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap');
@@ -308,6 +375,19 @@ st.markdown(f"""
         font-family: 'Inter', 'Plus Jakarta Sans', sans-serif;
         background: {colors['background']};
         color: {colors['text']};
+    }}
+
+    /* Fix for dark mode text in all elements */
+    .stMarkdown, p, h1, h2, h3, h4, h5, h6, span, div {{
+        color: {colors['text']} !important;
+    }}
+
+    .stSelectbox label, .stSlider label, .stRadio label, .stCheckbox label {{
+        color: {colors['text']} !important;
+    }}
+
+    .st-bb, .st-at, .st-ae, .st-af, .st-ag {{
+        color: {colors['text']} !important;
     }}
 
     .main .block-container {{
@@ -351,6 +431,7 @@ st.markdown(f"""
         letter-spacing: -0.5px;
         position: relative;
         z-index: 1;
+        color: white !important;
     }}
 
     .header p {{
@@ -359,6 +440,7 @@ st.markdown(f"""
         font-size: 1.1rem;
         position: relative;
         z-index: 1;
+        color: white !important;
     }}
 
     /* Glassmorphism Sidebar Profile */
@@ -395,13 +477,13 @@ st.markdown(f"""
 
     .profile-name {{
         font-weight: 700;
-        color: {colors['text']};
+        color: {colors['text']} !important;
         font-size: 1.2rem;
     }}
 
     .profile-email {{
         font-size: 0.85rem;
-        color: {colors['text_secondary']};
+        color: {colors['text_secondary']} !important;
     }}
 
     .profile-stats {{
@@ -419,14 +501,14 @@ st.markdown(f"""
 
     .stat-value {{
         font-weight: 800;
-        color: {colors['primary']};
+        color: {colors['primary']} !important;
         font-size: 1.5rem;
         line-height: 1.2;
     }}
 
     .stat-label {{
         font-size: 0.75rem;
-        color: {colors['text_secondary']};
+        color: {colors['text_secondary']} !important;
         text-transform: uppercase;
         letter-spacing: 0.5px;
     }}
@@ -462,7 +544,7 @@ st.markdown(f"""
     .card-title {{
         font-size: 1.2rem;
         font-weight: 700;
-        color: {colors['text']};
+        color: {colors['text']} !important;
         margin-bottom: 1.5rem;
         padding-bottom: 1rem;
         border-bottom: 2px solid {colors['border']};
@@ -500,7 +582,7 @@ st.markdown(f"""
     /* Theme Toggle Button */
     .stButton > button[key="theme_toggle"] {{
         background: {colors['card_bg']};
-        color: {colors['text']};
+        color: {colors['text']} !important;
         border: 2px solid {colors['border']};
         box-shadow: none;
         font-weight: 700;
@@ -510,7 +592,7 @@ st.markdown(f"""
     
     .stButton > button[key="theme_toggle"]:hover {{
         background: linear-gradient(135deg, {colors['gradient_start']} 0%, {colors['gradient_end']} 100%);
-        color: white;
+        color: white !important;
         border: none;
     }}
 
@@ -557,7 +639,7 @@ st.markdown(f"""
         padding: 0.6rem 1.5rem;
         border-radius: 40px;
         font-weight: 500;
-        color: {colors['text_secondary']};
+        color: {colors['text_secondary']} !important;
         transition: all 0.3s ease;
         cursor: pointer;
     }}
@@ -566,6 +648,10 @@ st.markdown(f"""
         background: linear-gradient(135deg, {colors['gradient_start']} 0%, {colors['gradient_end']} 100%);
         color: white !important;
         box-shadow: 0 10px 20px rgba(102, 126, 234, 0.3);
+    }}
+
+    .stRadio [aria-checked="true"] [data-testid="stMarkdownContainer"] {{
+        color: white !important;
     }}
 
     /* Premium Metric Cards */
@@ -587,13 +673,13 @@ st.markdown(f"""
     .metric-value {{
         font-size: 2.2rem;
         font-weight: 800;
-        color: {colors['primary']};
+        color: {colors['primary']} !important;
         line-height: 1.2;
     }}
 
     .metric-label {{
         font-size: 0.85rem;
-        color: {colors['text_secondary']};
+        color: {colors['text_secondary']} !important;
         text-transform: uppercase;
         letter-spacing: 0.5px;
         margin-top: 0.5rem;
@@ -624,7 +710,7 @@ st.markdown(f"""
         justify-content: space-between;
         align-items: center;
         font-weight: 500;
-        color: {colors['text']};
+        color: {colors['text']} !important;
     }}
 
     /* Premium History Items */
@@ -651,7 +737,7 @@ st.markdown(f"""
 
     .history-date {{
         font-weight: 600;
-        color: {colors['primary']};
+        color: {colors['primary']} !important;
         background: rgba(102, 126, 234, 0.1);
         padding: 0.3rem 1rem;
         border-radius: 30px;
@@ -664,7 +750,7 @@ st.markdown(f"""
         border-radius: 30px;
         font-size: 0.85rem;
         border: 1px solid {colors['border']};
-        color: {colors['text']};
+        color: {colors['text']} !important;
     }}
 
     /* Premium Export Section */
@@ -692,7 +778,7 @@ st.markdown(f"""
     .export-title {{
         font-size: 1.1rem;
         font-weight: 700;
-        color: {colors['text']};
+        color: {colors['text']} !important;
         margin-bottom: 1.5rem;
         display: flex;
         align-items: center;
@@ -731,14 +817,14 @@ st.markdown(f"""
         font-weight: 600;
         letter-spacing: 0.3px;
         background: rgba(102, 126, 234, 0.1);
-        color: {colors['primary']};
+        color: {colors['primary']} !important;
         border: 1px solid rgba(102, 126, 234, 0.2);
         transition: all 0.3s ease;
     }}
 
     .badge:hover {{
         background: linear-gradient(135deg, {colors['gradient_start']} 0%, {colors['gradient_end']} 100%);
-        color: white;
+        color: white !important;
         transform: translateY(-2px);
     }}
 
@@ -796,7 +882,7 @@ st.markdown(f"""
     
     .forecast-date {{
         font-weight: 600;
-        color: {colors['primary']};
+        color: {colors['primary']} !important;
     }}
     
     .forecast-model {{
@@ -804,19 +890,40 @@ st.markdown(f"""
         padding: 0.2rem 0.8rem;
         border-radius: 20px;
         font-size: 0.8rem;
-        color: {colors['text']};
+        color: {colors['text']} !important;
     }}
 
     /* Cleaning badge */
     .cleaned-badge {{
         background: {colors['success']};
-        color: white;
+        color: white !important;
         padding: 0.3rem 1rem;
         border-radius: 20px;
         font-size: 0.8rem;
         font-weight: 600;
         border: 1px solid {colors['success']};
         margin-left: 1rem;
+    }}
+
+    /* Fix for dropdown menus in dark mode */
+    .stSelectbox div[data-baseweb="select"] > div {{
+        background-color: {colors['card_bg']} !important;
+        color: {colors['text']} !important;
+    }}
+
+    .stSelectbox ul {{
+        background-color: {colors['card_bg']} !important;
+        color: {colors['text']} !important;
+    }}
+
+    /* Fix for slider labels */
+    .stSlider label {{
+        color: {colors['text']} !important;
+    }}
+
+    /* Fix for radio buttons */
+    .stRadio label {{
+        color: {colors['text']} !important;
     }}
 
     /* Hide Streamlit Branding */
@@ -843,12 +950,12 @@ if not st.session_state.logged_in:
         if st.button("🔐 LOGIN", use_container_width=True, 
                     type="primary" if st.session_state.auth_page == "login" else "secondary"):
             st.session_state.auth_page = "login"
-            st.rerun()
+            st.experimental_rerun()
     with col2:
         if st.button("📝 SIGN UP", use_container_width=True,
                     type="primary" if st.session_state.auth_page == "signup" else "secondary"):
             st.session_state.auth_page = "signup"
-            st.rerun()
+            st.experimental_rerun()
     
     st.markdown("<br>", unsafe_allow_html=True)
     
@@ -866,7 +973,7 @@ if not st.session_state.logged_in:
                     if success:
                         st.success(message)
                         time.sleep(1)
-                        st.rerun()
+                        st.experimental_rerun()
                     else:
                         st.error(message)
                 else:
@@ -893,7 +1000,7 @@ if not st.session_state.logged_in:
                         st.success(message)
                         st.session_state.auth_page = "login"
                         time.sleep(2)
-                        st.rerun()
+                        st.experimental_rerun()
                     else:
                         st.error(message)
     
@@ -910,7 +1017,7 @@ else:
         
         if st.button(button_text, key="theme_toggle", use_container_width=True):
             st.session_state.theme = 'dark' if current_theme == 'light' else 'light'
-            st.rerun()
+            st.experimental_rerun()
         
         st.markdown("---")
         
@@ -937,12 +1044,12 @@ else:
                     st.session_state.show_delete_confirmation = False
                     st.session_state.selected_forecast_to_delete = None
                     st.success("✅ Deleted!")
-                    st.rerun()
+                    st.experimental_rerun()
             with col2:
                 if st.button("❌ NO", key="cancel_delete", use_container_width=True):
                     st.session_state.show_delete_confirmation = False
                     st.session_state.selected_forecast_to_delete = None
-                    st.rerun()
+                    st.experimental_rerun()
         
         # Profile card
         st.markdown(f"""
@@ -976,12 +1083,12 @@ else:
         
         if st.button(forecast_text, key="sidebar_forecast_btn", use_container_width=True):
             st.session_state.show_forecast_history = not st.session_state.show_forecast_history
-            st.rerun()
+            st.experimental_rerun()
         
         # LOGOUT BUTTON
         if st.button("🚪 Logout", key="sidebar_logout_btn", use_container_width=True):
             st.session_state.logout_trigger = True
-            st.rerun()
+            st.experimental_rerun()
         
         st.markdown("---")
         
@@ -998,21 +1105,33 @@ else:
                         <span class="forecast-date">{forecast['date']}</span>
                         <span class="forecast-model">{forecast['model']}</span>
                     </div>
-                    <p style="margin: 0.3rem 0; font-size: 0.9rem; color: {colors['text']};">Months: {forecast['months']} | R²: {forecast.get('r2', 0):.3f}</p>
+                    <p style="margin: 0.3rem 0; font-size: 0.9rem; color: {colors['text']} !important;">Months: {forecast['months']} | R²: {forecast.get('r2', 0):.3f}</p>
                 """, unsafe_allow_html=True)
                 
-                # Mini chart
+                # Mini chart with legend
                 fig = go.Figure()
                 fig.add_trace(go.Scatter(
                     y=forecast['values'], 
                     mode='lines+markers',
+                    name=f'📈 {forecast["model"]}',
                     line=dict(color=colors['primary'], width=2),
                     marker=dict(size=3)
                 ))
                 fig.update_layout(
                     height=80, 
-                    margin=dict(l=0, r=0, t=0, b=0),
-                    showlegend=False,
+                    margin=dict(l=0, r=80, t=10, b=0),  # Extra right margin for legend
+                    showlegend=True,
+                    legend=dict(
+                        orientation='h',
+                        yanchor='top',
+                        y=1.0,
+                        xanchor='left',
+                        x=0,
+                        font=dict(size=8, color=colors['text']),
+                        bgcolor='rgba(0,0,0,0)',
+                        bordercolor='rgba(0,0,0,0)',
+                        borderwidth=0
+                    ),
                     template='plotly_white',
                     paper_bgcolor='rgba(0,0,0,0)',
                     plot_bgcolor='rgba(0,0,0,0)'
@@ -1038,7 +1157,7 @@ else:
                     if st.button("🗑️ DELETE", key=f"sidebar_delete_{i}", use_container_width=True):
                         st.session_state.selected_forecast_to_delete = original_idx
                         st.session_state.show_delete_confirmation = True
-                        st.rerun()
+                        st.experimental_rerun()
                 
                 st.markdown("</div>", unsafe_allow_html=True)
         
@@ -1068,7 +1187,7 @@ else:
     
     if st.session_state.logout_trigger:
         logout_user()
-        st.rerun()
+        st.experimental_rerun()
     
     if st.session_state.show_forecast_history and len(st.session_state.forecast_history) > 0:
         with st.expander("📋 Forecast History", expanded=True):
@@ -1089,13 +1208,15 @@ else:
                     best_r2 = max(forecast['metrics'].values()) if isinstance(forecast['metrics'], dict) else forecast.get('r2', 0)
                     st.write(f"**R²:** {best_r2:.3f}")
                 
+                # History chart with legend on right
                 fig = go.Figure()
-                fig.add_trace(go.Scatter(y=forecast['values'], mode='lines+markers',
-                                        line=dict(color=colors['primary'], width=2)))
-                fig.update_layout(height=150, margin=dict(l=0, r=0, t=0, b=0),
-                                showlegend=False, template='plotly_white',
-                                paper_bgcolor='rgba(0,0,0,0)',
-                                plot_bgcolor='rgba(0,0,0,0)')
+                fig.add_trace(go.Scatter(
+                    y=forecast['values'], 
+                    mode='lines+markers',
+                    name=f'📈 Forecast #{i+1}',
+                    line=dict(color=colors['primary'], width=2)
+                ))
+                fig = create_legend_chart(fig, "Period", "Value")
                 st.plotly_chart(fig, use_container_width=True)
                 
                 hist_df = pd.DataFrame({
@@ -1115,7 +1236,7 @@ else:
             
             if st.button("Close History", use_container_width=True):
                 st.session_state.show_forecast_history = False
-                st.rerun()
+                st.experimental_rerun()
     
     st.markdown("---")
     
@@ -1132,7 +1253,7 @@ else:
             st.session_state.data_source = "sample"
             st.session_state.data_loaded = True
             st.session_state.using_sample_data = True
-            st.rerun()
+            st.experimental_rerun()
     with col3:
         if st.button("🗑️ Clear", use_container_width=True):
             st.session_state.data_loaded = False
@@ -1141,7 +1262,7 @@ else:
             st.session_state.using_sample_data = False
             st.session_state.data_cleaned = False
             st.session_state.last_forecast_result = None
-            st.rerun()
+            st.experimental_rerun()
     
     if st.session_state.data_loaded and st.session_state.df is not None:
         df_current = st.session_state.df
@@ -1344,7 +1465,7 @@ else:
             st.dataframe(col_info, use_container_width=True)
             st.markdown('</div>', unsafe_allow_html=True)
         
-        # ===== TAB 2: VISUAL ANALYTICS =====
+        # ===== TAB 2: VISUAL ANALYTICS (FIXED - NO HEADINGS, LEGEND ON RIGHT) =====
         elif selected_tab == "📈 Visual Analytics":
             st.markdown('<div class="card">', unsafe_allow_html=True)
             st.markdown('<div class="card-title"><i class="fas fa-chart-line"></i> Data Visualization</div>', unsafe_allow_html=True)
@@ -1364,35 +1485,35 @@ else:
                                 type="primary" if st.session_state.viz_chart_type == "Line Chart" else "secondary",
                                 use_container_width=True):
                         st.session_state.viz_chart_type = "Line Chart"
-                        st.rerun()
+                        st.experimental_rerun()
                 
                 with col_c2:
                     if st.button("📊 Bar", key="btn_bar",
                                 type="primary" if st.session_state.viz_chart_type == "Bar Chart" else "secondary",
                                 use_container_width=True):
                         st.session_state.viz_chart_type = "Bar Chart"
-                        st.rerun()
+                        st.experimental_rerun()
                 
                 with col_c3:
                     if st.button("⚡ Scatter", key="btn_scatter",
                                 type="primary" if st.session_state.viz_chart_type == "Scatter Plot" else "secondary",
                                 use_container_width=True):
                         st.session_state.viz_chart_type = "Scatter Plot"
-                        st.rerun()
+                        st.experimental_rerun()
                 
                 with col_c4:
                     if st.button("📊 Histogram", key="btn_hist",
                                 type="primary" if st.session_state.viz_chart_type == "Histogram" else "secondary",
                                 use_container_width=True):
                         st.session_state.viz_chart_type = "Histogram"
-                        st.rerun()
+                        st.experimental_rerun()
                 
                 with col_c5:
                     if st.button("📦 Box", key="btn_box",
                                 type="primary" if st.session_state.viz_chart_type == "Box Plot" else "secondary",
                                 use_container_width=True):
                         st.session_state.viz_chart_type = "Box Plot"
-                        st.rerun()
+                        st.experimental_rerun()
                 
                 fig = go.Figure()
                 
@@ -1401,55 +1522,64 @@ else:
                         x=df[x_col].head(500), 
                         y=df[y_col].head(500), 
                         mode='lines+markers', 
-                        name=y_col,
-                        line=dict(color=colors['primary'], width=2)
+                        name=f'📈 {y_col}',
+                        line=dict(color=colors['primary'], width=3),
+                        marker=dict(size=6, color=colors['primary'], line=dict(width=1, color='white'))
                     ))
-                    fig.update_layout(title=f"Line Chart: {y_col} over {x_col}")
+                    fig = create_legend_chart(fig, x_col, y_col)  # NO TITLE, just axis labels
                     
                 elif st.session_state.viz_chart_type == "Bar Chart":
                     fig.add_trace(go.Bar(
                         x=df[x_col].head(50), 
                         y=df[y_col].head(50), 
-                        name=y_col,
-                        marker_color=colors['primary']
+                        name=f'📊 {y_col}',
+                        marker_color=colors['primary'],
+                        marker_line=dict(width=1, color='white'),
+                        opacity=0.8
                     ))
-                    fig.update_layout(title=f"Bar Chart: {y_col} by {x_col}")
+                    fig = create_legend_chart(fig, x_col, y_col)
                     
                 elif st.session_state.viz_chart_type == "Scatter Plot":
                     fig.add_trace(go.Scatter(
                         x=df[x_col].head(500), 
                         y=df[y_col].head(500), 
                         mode='markers', 
-                        name=y_col,
-                        marker=dict(color=colors['primary'], size=6, opacity=0.6)
+                        name=f'⚡ {y_col}',
+                        marker=dict(
+                            color=colors['primary'], 
+                            size=8, 
+                            opacity=0.7,
+                            line=dict(width=1, color='white')
+                        )
                     ))
-                    fig.update_layout(title=f"Scatter Plot: {y_col} vs {x_col}")
+                    fig = create_legend_chart(fig, x_col, y_col)
                     
                 elif st.session_state.viz_chart_type == "Histogram":
                     fig.add_trace(go.Histogram(
                         x=df[y_col], 
                         nbinsx=30, 
-                        name=y_col,
-                        marker_color=colors['primary']
+                        name=f'📊 Distribution',
+                        marker_color=colors['primary'],
+                        marker_line=dict(width=1, color='white'),
+                        opacity=0.8
                     ))
-                    fig.update_layout(title=f"Distribution of {y_col}")
+                    fig = create_legend_chart(fig, y_col, "Frequency")
                     
-                else:
+                else:  # Box Plot
+                    # Convert hex to rgba properly
+                    primary_hex = colors['primary'].lstrip('#')
+                    primary_rgb = tuple(int(primary_hex[i:i+2], 16) for i in (0, 2, 4))
+                    
                     fig.add_trace(go.Box(
-                        y=df[y_col], 
-                        name=y_col,
-                        marker_color=colors['primary']
+                        y=df[y_col].head(500), 
+                        name=f'📦 {y_col}',
+                        marker_color=colors['primary'],
+                        boxmean='sd',
+                        line=dict(width=2, color=colors['primary']),
+                        fillcolor=f'rgba{primary_rgb + (0.2,)}',
+                        opacity=0.8
                     ))
-                    fig.update_layout(title=f"Box Plot: {y_col}")
-                
-                fig.update_layout(
-                    height=500,
-                    template='plotly_white',
-                    hovermode='x unified',
-                    paper_bgcolor='rgba(0,0,0,0)',
-                    plot_bgcolor='rgba(0,0,0,0)',
-                    font=dict(color=colors['text'])
-                )
+                    fig = create_legend_chart(fig, "", y_col)
                 
                 st.plotly_chart(fig, use_container_width=True)
                 
@@ -1475,13 +1605,15 @@ else:
                         z=corr.values, 
                         x=corr.columns, 
                         y=corr.columns, 
-                        colorscale='RdBu'
+                        colorscale='RdBu',
+                        name='Correlation'
                     ))
                     fig_corr.update_layout(
                         height=500,
                         paper_bgcolor='rgba(0,0,0,0)',
                         plot_bgcolor='rgba(0,0,0,0)',
-                        font=dict(color=colors['text'])
+                        font=dict(color=colors['text']),
+                        margin={'t': 30, 'b': 50, 'l': 50, 'r': 120}
                     )
                     st.plotly_chart(fig_corr, use_container_width=True)
                     
@@ -1497,7 +1629,7 @@ else:
                 st.warning("No numeric columns found")
             st.markdown('</div>', unsafe_allow_html=True)
         
-        # ===== TAB 3: GENERATE FORECAST =====
+        # ===== TAB 3: GENERATE FORECAST (WITH LEGEND ON RIGHT) =====
         elif selected_tab == "🚀 Generate Forecast":
             st.markdown('<div class="card">', unsafe_allow_html=True)
             st.markdown('<div class="card-title"><i class="fas fa-rocket"></i> Generate Forecast</div>', unsafe_allow_html=True)
@@ -1579,25 +1711,27 @@ else:
                 months = result['months']
                 confidence = result['confidence']
                 
-                # Plot
+                # Plot with proper legend on right
                 fig = go.Figure()
                 
-                # Historical
+                # Historical data trace
                 fig.add_trace(go.Scatter(
                     x=monthly['Month'], 
                     y=monthly['Sales'],
                     mode='lines+markers', 
-                    name='Historical',
-                    line=dict(color='black', width=3)
+                    name='📊 Historical Data',
+                    line=dict(color='#2E4057', width=3),
+                    marker=dict(size=8, color='#2E4057', symbol='circle', line=dict(width=1, color='white'))
                 ))
                 
-                # Forecast
+                # Forecast trace
                 fig.add_trace(go.Scatter(
                     x=future_dates, 
                     y=forecast,
                     mode='lines+markers',
-                    name=f'Forecast ({selected_model})',
-                    line=dict(color=colors['primary'], width=3, dash='dash')
+                    name=f'🔮 Forecast ({selected_model})',
+                    line=dict(color=colors['primary'], width=3, dash='dash'),
+                    marker=dict(size=8, color=colors['primary'], symbol='diamond', line=dict(width=1, color='white'))
                 ))
                 
                 # Confidence interval
@@ -1607,7 +1741,6 @@ else:
                 upper = [f + ci_factor * std_err for f in forecast]
                 lower = [max(0, f - ci_factor * std_err) for f in forecast]
                 
-                # Convert hex color to rgba for confidence interval
                 primary_hex = colors['primary'].lstrip('#')
                 primary_rgb = tuple(int(primary_hex[i:i+2], 16) for i in (0, 2, 4))
                 
@@ -1617,18 +1750,12 @@ else:
                     fill='toself',
                     fillcolor=f'rgba{primary_rgb + (0.2,)}',
                     line=dict(color='rgba(255,255,255,0)'),
-                    name=f'{confidence}% Confidence'
+                    name=f'🎯 {confidence}% Confidence',
+                    showlegend=True
                 ))
                 
-                fig.update_layout(
-                    height=500,
-                    template='plotly_white',
-                    hovermode='x unified',
-                    title=f"{selected_model} - {months} Month Forecast",
-                    paper_bgcolor='rgba(0,0,0,0)',
-                    plot_bgcolor='rgba(0,0,0,0)',
-                    font=dict(color=colors['text'])
-                )
+                # Apply legend styling (NO TITLE)
+                fig = create_legend_chart(fig, "Date", "Sales")
                 
                 st.plotly_chart(fig, use_container_width=True)
                 
@@ -1691,7 +1818,7 @@ else:
             
             st.markdown('</div>', unsafe_allow_html=True)
         
-        # ===== TAB 4: MODEL COMPARISON =====
+        # ===== TAB 4: MODEL COMPARISON (WITH LEGEND ON RIGHT) =====
         elif selected_tab == "🤖 Model Comparison":
             st.markdown('<div class="card">', unsafe_allow_html=True)
             st.markdown('<div class="card-title"><i class="fas fa-code-branch"></i> Model Comparison</div>', unsafe_allow_html=True)
@@ -1748,23 +1875,29 @@ else:
                                 future_dates.append(current)
                             
                             fig = go.Figure()
-                            fig.add_trace(go.Scatter(x=monthly['Month'], y=monthly['Sales'],
-                                                    mode='lines+markers', name='Historical',
-                                                    line=dict(color='black', width=3)))
                             
+                            # Historical
+                            fig.add_trace(go.Scatter(
+                                x=monthly['Month'], 
+                                y=monthly['Sales'],
+                                mode='lines+markers', 
+                                name='📊 Historical Data',
+                                line=dict(color='black', width=3),
+                                marker=dict(size=8)
+                            ))
+                            
+                            # Model predictions
                             for m_name, pred in predictions.items():
-                                fig.add_trace(go.Scatter(x=future_dates, y=pred,
-                                                        mode='lines+markers',
-                                                        name=f"{model_names[m_name]} ({metrics[m_name]:.3f})",
-                                                        line=dict(color=colors_map[m_name], width=2, dash='dash')))
+                                fig.add_trace(go.Scatter(
+                                    x=future_dates, 
+                                    y=pred,
+                                    mode='lines+markers',
+                                    name=f'🤖 {model_names[m_name]} (R²: {metrics[m_name]:.3f})',
+                                    line=dict(color=colors_map[m_name], width=2, dash='dash'),
+                                    marker=dict(size=6)
+                                ))
                             
-                            fig.update_layout(
-                                height=500, 
-                                hovermode='x unified',
-                                paper_bgcolor='rgba(0,0,0,0)',
-                                plot_bgcolor='rgba(0,0,0,0)',
-                                font=dict(color=colors['text'])
-                            )
+                            fig = create_legend_chart(fig, "Date", "Sales")
                             st.plotly_chart(fig, use_container_width=True)
                             
                             metrics_df = pd.DataFrame({
@@ -1889,7 +2022,7 @@ else:
                         st.error(f"AutoML error: {str(e)}")
             st.markdown('</div>', unsafe_allow_html=True)
         
-        # ===== TAB 6: ANOMALY DETECTION (FIXED) =====
+        # ===== TAB 6: ANOMALY DETECTION (WITH LEGEND ON RIGHT) =====
         elif selected_tab == "🔍 Anomaly Detection":
             st.markdown('<div class="card">', unsafe_allow_html=True)
             st.markdown('<div class="card-title"><i class="fas fa-exclamation-triangle"></i> Anomaly Detection</div>', unsafe_allow_html=True)
@@ -1910,13 +2043,11 @@ else:
                         anomaly_idx = np.where(pred == -1)[0]
                         
                     elif method == "Z-Score":
-                        # Flatten the data for Z-Score calculation
                         data_flat = data.flatten()
                         z_scores = np.abs((data_flat - data_flat.mean()) / data_flat.std())
                         anomaly_idx = np.where(z_scores > 3)[0]
                         
                     else:  # IQR method
-                        # Flatten the data for IQR calculation
                         data_flat = data.flatten()
                         Q1, Q3 = np.percentile(data_flat, [25, 75])
                         iqr = Q3 - Q1
@@ -1924,36 +2055,50 @@ else:
                         upper = Q3 + 1.5 * iqr
                         anomaly_idx = np.where((data_flat < lower) | (data_flat > upper))[0]
                     
-                    # Create figure
+                    # Create figure with proper legend
                     fig = go.Figure()
                     
-                    # Plot all data
+                    # Normal data points
+                    normal_idx = [i for i in range(len(df)) if i not in anomaly_idx]
                     fig.add_trace(go.Scatter(
-                        y=df[anomaly_col], 
-                        mode='lines+markers', 
-                        name='Normal',
-                        line=dict(color=colors['primary'], width=2),
-                        marker=dict(size=4)
+                        x=normal_idx,
+                        y=df[anomaly_col].iloc[normal_idx],
+                        mode='markers',
+                        name='✅ Normal Data',
+                        marker=dict(
+                            color=colors['primary'], 
+                            size=6, 
+                            opacity=0.6,
+                            line=dict(width=1, color='white')
+                        )
                     ))
                     
-                    # Highlight anomalies
+                    # Anomaly points
                     if len(anomaly_idx) > 0:
                         fig.add_trace(go.Scatter(
-                            x=anomaly_idx, 
-                            y=df[anomaly_col].iloc[anomaly_idx], 
-                            mode='markers', 
-                            name=f'Anomaly ({len(anomaly_idx)})',
-                            marker=dict(color='red', size=10, symbol='x', line=dict(width=2))
+                            x=anomaly_idx,
+                            y=df[anomaly_col].iloc[anomaly_idx],
+                            mode='markers',
+                            name=f'⚠️ Anomalies ({len(anomaly_idx)})',
+                            marker=dict(
+                                color='red', 
+                                size=12, 
+                                symbol='x',
+                                line=dict(width=2, color='darkred')
+                            )
                         ))
                     
-                    fig.update_layout(
-                        height=400, 
-                        title=f"Found {len(anomaly_idx)} anomalies using {method}",
-                        paper_bgcolor='rgba(0,0,0,0)',
-                        plot_bgcolor='rgba(0,0,0,0)',
-                        font=dict(color=colors['text']),
-                        hovermode='x unified'
-                    )
+                    # Trend line
+                    fig.add_trace(go.Scatter(
+                        y=df[anomaly_col],
+                        mode='lines',
+                        name='📈 Trend Line',
+                        line=dict(color='gray', width=1, dash='dot'),
+                        opacity=0.5,
+                        showlegend=True
+                    ))
+                    
+                    fig = create_legend_chart(fig, "Data Point Index", anomaly_col)
                     
                     st.plotly_chart(fig, use_container_width=True)
                     
@@ -2012,16 +2157,13 @@ else:
                             st.info(f"**Best R²:** {best_r2:.3f}")
                         
                         fig = go.Figure()
-                        fig.add_trace(go.Scatter(y=forecast['values'], mode='lines+markers',
-                                                line=dict(color=colors['primary'], width=2)))
-                        fig.update_layout(
-                            height=200, 
-                            margin=dict(l=0, r=0, t=0, b=0),
-                            showlegend=False, 
-                            template='plotly_white',
-                            paper_bgcolor='rgba(0,0,0,0)',
-                            plot_bgcolor='rgba(0,0,0,0)'
-                        )
+                        fig.add_trace(go.Scatter(
+                            y=forecast['values'], 
+                            mode='lines+markers',
+                            name=f'📈 {forecast["model"]} Forecast',
+                            line=dict(color=colors['primary'], width=2)
+                        ))
+                        fig = create_legend_chart(fig, "Months", "Value")
                         st.plotly_chart(fig, use_container_width=True)
                         
                         hist_df = pd.DataFrame({
@@ -2042,7 +2184,7 @@ else:
                         if st.button(f"🗑️ DELETE", key=f"main_delete_{i}", use_container_width=True):
                             st.session_state.selected_forecast_to_delete = original_idx
                             st.session_state.show_delete_confirmation = True
-                            st.rerun()
+                            st.experimental_rerun()
             else:
                 st.info("No forecast history yet. Run a forecast to see results here.")
             
@@ -2056,7 +2198,7 @@ else:
                         users[st.session_state.username]['forecast_history'] = []
                         users[st.session_state.username]['forecast_count'] = 0
                         save_users(users)
-                    st.rerun()
+                    st.experimental_rerun()
             
             st.markdown('</div>', unsafe_allow_html=True)
 
