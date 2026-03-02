@@ -247,19 +247,15 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# ===== FIREBASE SETUP WITH DEBUG =====
+# ===== FIREBASE SETUP =====
 import firebase_admin
 from firebase_admin import credentials, firestore
-import json
 
-# Debug: Check if secrets exist
+# Get Firebase secrets
 try:
-    st.write("Checking Firebase secrets...")
     firebase_secrets = dict(st.secrets["firebase"])
-    st.write("✅ Firebase secrets found!")
-    st.write("Project ID:", firebase_secrets.get("project_id"))
-except Exception as e:
-    st.error(f"❌ Firebase secrets error: {e}")
+except Exception:
+    st.error("Firebase configuration error. Please check your secrets.")
     st.stop()
 
 # Initialize Firebase (only once)
@@ -267,14 +263,12 @@ if not firebase_admin._apps:
     try:
         cred = credentials.Certificate(firebase_secrets)
         firebase_admin.initialize_app(cred)
-        st.write("✅ Firebase initialized successfully!")
-    except Exception as e:
-        st.error(f"❌ Firebase initialization error: {e}")
+    except Exception:
+        st.error("Failed to initialize Firebase. Please check your configuration.")
         st.stop()
 
 # Get Firestore client
 db = firestore.client()
-st.write("✅ Firestore client created!")
 # ===== INITIALIZE SESSION STATE =====
 if 'logged_in' not in st.session_state:
     st.session_state.logged_in = False
