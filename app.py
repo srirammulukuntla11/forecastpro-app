@@ -32,26 +32,34 @@ warnings.filterwarnings('ignore')
 sys.path.append(os.path.dirname(__file__))
 import model
 
-# ===== FIREBASE SETUP =====
+# ===== FIREBASE SETUP WITH DEBUG =====
 import firebase_admin
 from firebase_admin import credentials, firestore
 import json
 
+# Debug: Check if secrets exist
+try:
+    st.write("Checking Firebase secrets...")
+    firebase_secrets = dict(st.secrets["firebase"])
+    st.write("✅ Firebase secrets found!")
+    st.write("Project ID:", firebase_secrets.get("project_id"))
+except Exception as e:
+    st.error(f"❌ Firebase secrets error: {e}")
+    st.stop()
+
 # Initialize Firebase (only once)
 if not firebase_admin._apps:
-    # Check if running locally or on Streamlit Cloud
-    if os.path.exists('firebase-key.json'):
-        # Local development
-        cred = credentials.Certificate('firebase-key.json')
-    else:
-        # Streamlit Cloud - you'll add secrets later
-        firebase_secrets = dict(st.secrets["firebase"])
+    try:
         cred = credentials.Certificate(firebase_secrets)
-    
-    firebase_admin.initialize_app(cred)
+        firebase_admin.initialize_app(cred)
+        st.write("✅ Firebase initialized successfully!")
+    except Exception as e:
+        st.error(f"❌ Firebase initialization error: {e}")
+        st.stop()
 
 # Get Firestore client
 db = firestore.client()
+st.write("✅ Firestore client created!")
 
 # ===== DATABASE FUNCTIONS =====
 def load_users():
