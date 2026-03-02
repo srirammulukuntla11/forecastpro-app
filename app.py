@@ -1,6 +1,6 @@
 """
 FORECASTPRO ENTERPRISE - COMPLETE FULL VERSION
-1700+ Lines • All Features • Sidebar Delete Buttons • Graph Persists • Enterprise Grade
+With Firebase Database
 """
 
 import streamlit as st
@@ -31,6 +31,118 @@ warnings.filterwarnings('ignore')
 # Add path for imports
 sys.path.append(os.path.dirname(__file__))
 import model
+
+# ===== FIREBASE SETUP =====
+import firebase_admin
+from firebase_admin import credentials, firestore
+import json
+
+# Initialize Firebase (only once)
+if not firebase_admin._apps:
+    # Check if running locally or on Streamlit Cloud
+    if os.path.exists('firebase-key.json'):
+        # Local development
+        cred = credentials.Certificate('firebase-key.json')
+    else:
+        # Streamlit Cloud - you'll add secrets later
+        firebase_secrets = dict(st.secrets["firebase"])
+        cred = credentials.Certificate(firebase_secrets)
+    
+    firebase_admin.initialize_app(cred)
+
+# Get Firestore client
+db = firestore.client()
+
+# ===== DATABASE FUNCTIONS =====
+def load_users():
+    """Load all users from Firebase"""
+    try:
+        users_ref = db.collection('users')
+        docs = users_ref.stream()
+        
+        users = {}
+        for doc in docs:
+            users[doc.id] = doc.to_dict()
+        return users
+    except Exception as e:
+        print(f"Error loading users: {e}")
+        return {}
+
+def save_users(users):
+    """Save all users to Firebase"""
+    try:
+        batch = db.batch()
+        users_ref = db.collection('users')
+        
+        # Delete all existing documents (optional)
+        docs = users_ref.stream()
+        for doc in docs:
+            batch.delete(doc.reference)
+        
+        # Add all users
+        for username, user_data in users.items():
+            doc_ref = users_ref.document(username)
+            batch.set(doc_ref, user_data)
+        
+        batch.commit()
+        return True
+    except Exception as e:
+        print(f"Error saving users: {e}")
+        return False
+
+def get_user(username):
+    """Get single user from Firebase"""
+    try:
+        doc_ref = db.collection('users').document(username)
+        doc = doc_ref.get()
+        if doc.exists:
+            return {doc.id: doc.to_dict()}
+        return {}
+    except Exception as e:
+        print(f"Error getting user: {e}")
+        return {}
+
+def update_user(username, user_data):
+    """Update single user in Firebase"""
+    try:
+        doc_ref = db.collection('users').document(username)
+        doc_ref.set(user_data, merge=True)
+        return True
+    except Exception as e:
+        print(f"Error updating user: {e}")
+        return False
+
+def delete_user(username):
+    """Delete user from Firebase"""
+    try:
+        doc_ref = db.collection('users').document(username)
+        doc_ref.delete()
+        return True
+    except Exception as e:
+        print(f"Error deleting user: {e}")
+        return False
+
+# ===== MIGRATION FUNCTION =====
+def migrate_json_to_firebase():
+    """Migrate existing users.json to Firebase"""
+    try:
+        if os.path.exists('users.json'):
+            with open('users.json', 'r') as f:
+                users = json.load(f)
+            
+            batch = db.batch()
+            users_ref = db.collection('users')
+            
+            for username, user_data in users.items():
+                doc_ref = users_ref.document(username)
+                batch.set(doc_ref, user_data)
+            
+            batch.commit()
+            st.success(f"✅ Migrated {len(users)} users to Firebase!")
+            return True
+    except Exception as e:
+        st.error(f"Migration error: {e}")
+        return False
 
 # ===== THEME CONFIGURATION =====
 if 'theme' not in st.session_state:
@@ -81,14 +193,12 @@ themes = {
 # Set current theme colors
 colors = themes[st.session_state.theme]
 
-# ===== LEGEND FUNCTION FOR ALL GRAPHS (FIXED POSITION - RIGHT SIDE) =====
+# ===== LEGEND FUNCTION FOR ALL GRAPHS =====
 def create_legend_chart(fig, x_label, y_label):
-    """Apply consistent styling to all charts with legends on RIGHT side"""
+    """Apply consistent styling to all charts with legends at TOP LEFT inside graph"""
     
     fig.update_layout(
-        # NO TITLE - removed as requested
-        
-        # Legend styling - NOW AT TOP LEFT INSIDE GRAPH
+        # Legend styling - AT TOP LEFT INSIDE GRAPH
         legend={
             'font': {'size': 11, 'color': colors['text'], 'family': 'Inter, sans-serif'},
             'bgcolor': 'rgba(0,0,0,0)',  # NO BACKGROUND
@@ -142,33 +252,11 @@ def create_legend_chart(fig, x_label, y_label):
         # Hover mode
         hovermode='x unified',
         
-        # Margin to make room for legend on right
-        margin={'t': 30, 'b': 50, 'l': 50, 'r': 120}  # Extra right margin for legend
+        # Margin to make room for legend
+        margin={'t': 40, 'b': 50, 'l': 50, 'r': 30}
     )
     
     return fig
-
-# ===== DEPLOYMENT-SAFE FILE HANDLING =====
-DATA_DIR = Path("/tmp") if os.name != 'nt' else Path(".")
-USER_DATA_FILE = DATA_DIR / "users.json"
-
-def load_users():
-    try:
-        if USER_DATA_FILE.exists():
-            with open(USER_DATA_FILE, "r") as f:
-                return json.load(f)
-    except Exception as e:
-        print(f"Error loading users: {e}")
-    return {}
-
-def save_users(users):
-    try:
-        with open(USER_DATA_FILE, "w") as f:
-            json.dump(users, f, indent=2)
-        return True
-    except Exception as e:
-        print(f"Error saving users: {e}")
-        return False
 
 # ===== PAGE CONFIG =====
 st.set_page_config(
@@ -202,8 +290,25 @@ if 'logged_in' not in st.session_state:
     st.session_state.show_delete_confirmation = False
     st.session_state.last_forecast_result = None
     st.session_state.data_cleaned = False
+    st.session_state.migration_done = False
 
-# ===== AUTHENTICATION FUNCTIONS =====
+# ===== CHECK FOR MIGRATION =====
+if not st.session_state.migration_done and os.path.exists('users.json'):
+    with st.sidebar:
+        st.markdown("---")
+        st.markdown("### 🔥 Firebase Migration")
+        st.info("Your old users.json file is still here. Do you want to migrate to Firebase?")
+        if st.button("🚀 Migrate to Firebase", key="migrate_btn"):
+            with st.spinner("Migrating data..."):
+                if migrate_json_to_firebase():
+                    # Rename old file as backup
+                    os.rename('users.json', 'users.json.backup')
+                    st.session_state.migration_done = True
+                    st.success("Migration complete! users.json renamed to users.json.backup")
+                    st.rerun()
+        st.markdown("---")
+
+# ===== AUTHENTICATION FUNCTIONS (UPDATED FOR FIREBASE) =====
 def hash_password(password):
     return hashlib.sha256(password.encode()).hexdigest()
 
@@ -229,6 +334,7 @@ def login_user(username, password):
                 
                 st.session_state.forecast_count = len(st.session_state.forecast_history)
                 
+                # Update last login in Firebase
                 users[username]['last_login'] = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
                 save_users(users)
                 
@@ -950,12 +1056,12 @@ if not st.session_state.logged_in:
         if st.button("🔐 LOGIN", use_container_width=True, 
                     type="primary" if st.session_state.auth_page == "login" else "secondary"):
             st.session_state.auth_page = "login"
-            st.experimental_rerun()
+            st.rerun()
     with col2:
         if st.button("📝 SIGN UP", use_container_width=True,
                     type="primary" if st.session_state.auth_page == "signup" else "secondary"):
             st.session_state.auth_page = "signup"
-            st.experimental_rerun()
+            st.rerun()
     
     st.markdown("<br>", unsafe_allow_html=True)
     
@@ -973,7 +1079,7 @@ if not st.session_state.logged_in:
                     if success:
                         st.success(message)
                         time.sleep(1)
-                        st.experimental_rerun()
+                        st.rerun()
                     else:
                         st.error(message)
                 else:
@@ -1000,7 +1106,7 @@ if not st.session_state.logged_in:
                         st.success(message)
                         st.session_state.auth_page = "login"
                         time.sleep(2)
-                        st.experimental_rerun()
+                        st.rerun()
                     else:
                         st.error(message)
     
@@ -1017,7 +1123,7 @@ else:
         
         if st.button(button_text, key="theme_toggle", use_container_width=True):
             st.session_state.theme = 'dark' if current_theme == 'light' else 'light'
-            st.experimental_rerun()
+            st.rerun()
         
         st.markdown("---")
         
@@ -1034,7 +1140,7 @@ else:
                     st.session_state.forecast_history.pop(idx)
                     st.session_state.forecast_count = len(st.session_state.forecast_history)
                     
-                    # Update users.json
+                    # Update Firebase
                     users = load_users()
                     if st.session_state.username in users:
                         users[st.session_state.username]['forecast_history'] = st.session_state.forecast_history
@@ -1044,12 +1150,12 @@ else:
                     st.session_state.show_delete_confirmation = False
                     st.session_state.selected_forecast_to_delete = None
                     st.success("✅ Deleted!")
-                    st.experimental_rerun()
+                    st.rerun()
             with col2:
                 if st.button("❌ NO", key="cancel_delete", use_container_width=True):
                     st.session_state.show_delete_confirmation = False
                     st.session_state.selected_forecast_to_delete = None
-                    st.experimental_rerun()
+                    st.rerun()
         
         # Profile card
         st.markdown(f"""
@@ -1083,12 +1189,12 @@ else:
         
         if st.button(forecast_text, key="sidebar_forecast_btn", use_container_width=True):
             st.session_state.show_forecast_history = not st.session_state.show_forecast_history
-            st.experimental_rerun()
+            st.rerun()
         
         # LOGOUT BUTTON
         if st.button("🚪 Logout", key="sidebar_logout_btn", use_container_width=True):
             st.session_state.logout_trigger = True
-            st.experimental_rerun()
+            st.rerun()
         
         st.markdown("---")
         
@@ -1119,7 +1225,7 @@ else:
                 ))
                 fig.update_layout(
                     height=80, 
-                    margin=dict(l=0, r=80, t=10, b=0),  # Extra right margin for legend
+                    margin=dict(l=0, r=10, t=20, b=0),
                     showlegend=True,
                     legend=dict(
                         orientation='h',
@@ -1157,7 +1263,7 @@ else:
                     if st.button("🗑️ DELETE", key=f"sidebar_delete_{i}", use_container_width=True):
                         st.session_state.selected_forecast_to_delete = original_idx
                         st.session_state.show_delete_confirmation = True
-                        st.experimental_rerun()
+                        st.rerun()
                 
                 st.markdown("</div>", unsafe_allow_html=True)
         
@@ -1187,7 +1293,7 @@ else:
     
     if st.session_state.logout_trigger:
         logout_user()
-        st.experimental_rerun()
+        st.rerun()
     
     if st.session_state.show_forecast_history and len(st.session_state.forecast_history) > 0:
         with st.expander("📋 Forecast History", expanded=True):
@@ -1208,15 +1314,15 @@ else:
                     best_r2 = max(forecast['metrics'].values()) if isinstance(forecast['metrics'], dict) else forecast.get('r2', 0)
                     st.write(f"**R²:** {best_r2:.3f}")
                 
-                # History chart with legend on right
+                # History chart with legend on top left
                 fig = go.Figure()
                 fig.add_trace(go.Scatter(
                     y=forecast['values'], 
                     mode='lines+markers',
-                    name=f'📈 Forecast #{i+1}',
+                    name=f'📈 {forecast["model"]} Forecast',
                     line=dict(color=colors['primary'], width=2)
                 ))
-                fig = create_legend_chart(fig, "Period", "Value")
+                fig = create_legend_chart(fig, "Months", "Value")
                 st.plotly_chart(fig, use_container_width=True)
                 
                 hist_df = pd.DataFrame({
@@ -1236,7 +1342,7 @@ else:
             
             if st.button("Close History", use_container_width=True):
                 st.session_state.show_forecast_history = False
-                st.experimental_rerun()
+                st.rerun()
     
     st.markdown("---")
     
@@ -1253,7 +1359,7 @@ else:
             st.session_state.data_source = "sample"
             st.session_state.data_loaded = True
             st.session_state.using_sample_data = True
-            st.experimental_rerun()
+            st.rerun()
     with col3:
         if st.button("🗑️ Clear", use_container_width=True):
             st.session_state.data_loaded = False
@@ -1262,7 +1368,7 @@ else:
             st.session_state.using_sample_data = False
             st.session_state.data_cleaned = False
             st.session_state.last_forecast_result = None
-            st.experimental_rerun()
+            st.rerun()
     
     if st.session_state.data_loaded and st.session_state.df is not None:
         df_current = st.session_state.df
@@ -1465,7 +1571,7 @@ else:
             st.dataframe(col_info, use_container_width=True)
             st.markdown('</div>', unsafe_allow_html=True)
         
-        # ===== TAB 2: VISUAL ANALYTICS (FIXED - NO HEADINGS, LEGEND ON RIGHT) =====
+        # ===== TAB 2: VISUAL ANALYTICS =====
         elif selected_tab == "📈 Visual Analytics":
             st.markdown('<div class="card">', unsafe_allow_html=True)
             st.markdown('<div class="card-title"><i class="fas fa-chart-line"></i> Data Visualization</div>', unsafe_allow_html=True)
@@ -1485,35 +1591,35 @@ else:
                                 type="primary" if st.session_state.viz_chart_type == "Line Chart" else "secondary",
                                 use_container_width=True):
                         st.session_state.viz_chart_type = "Line Chart"
-                        st.experimental_rerun()
+                        st.rerun()
                 
                 with col_c2:
                     if st.button("📊 Bar", key="btn_bar",
                                 type="primary" if st.session_state.viz_chart_type == "Bar Chart" else "secondary",
                                 use_container_width=True):
                         st.session_state.viz_chart_type = "Bar Chart"
-                        st.experimental_rerun()
+                        st.rerun()
                 
                 with col_c3:
                     if st.button("⚡ Scatter", key="btn_scatter",
                                 type="primary" if st.session_state.viz_chart_type == "Scatter Plot" else "secondary",
                                 use_container_width=True):
                         st.session_state.viz_chart_type = "Scatter Plot"
-                        st.experimental_rerun()
+                        st.rerun()
                 
                 with col_c4:
                     if st.button("📊 Histogram", key="btn_hist",
                                 type="primary" if st.session_state.viz_chart_type == "Histogram" else "secondary",
                                 use_container_width=True):
                         st.session_state.viz_chart_type = "Histogram"
-                        st.experimental_rerun()
+                        st.rerun()
                 
                 with col_c5:
                     if st.button("📦 Box", key="btn_box",
                                 type="primary" if st.session_state.viz_chart_type == "Box Plot" else "secondary",
                                 use_container_width=True):
                         st.session_state.viz_chart_type = "Box Plot"
-                        st.experimental_rerun()
+                        st.rerun()
                 
                 fig = go.Figure()
                 
@@ -1526,7 +1632,7 @@ else:
                         line=dict(color=colors['primary'], width=3),
                         marker=dict(size=6, color=colors['primary'], line=dict(width=1, color='white'))
                     ))
-                    fig = create_legend_chart(fig, x_col, y_col)  # NO TITLE, just axis labels
+                    fig = create_legend_chart(fig, x_col, y_col)
                     
                 elif st.session_state.viz_chart_type == "Bar Chart":
                     fig.add_trace(go.Bar(
@@ -1613,7 +1719,7 @@ else:
                         paper_bgcolor='rgba(0,0,0,0)',
                         plot_bgcolor='rgba(0,0,0,0)',
                         font=dict(color=colors['text']),
-                        margin={'t': 30, 'b': 50, 'l': 50, 'r': 120}
+                        margin={'t': 30, 'b': 50, 'l': 50, 'r': 30}
                     )
                     st.plotly_chart(fig_corr, use_container_width=True)
                     
@@ -1629,7 +1735,7 @@ else:
                 st.warning("No numeric columns found")
             st.markdown('</div>', unsafe_allow_html=True)
         
-        # ===== TAB 3: GENERATE FORECAST (WITH LEGEND ON RIGHT) =====
+        # ===== TAB 3: GENERATE FORECAST =====
         elif selected_tab == "🚀 Generate Forecast":
             st.markdown('<div class="card">', unsafe_allow_html=True)
             st.markdown('<div class="card-title"><i class="fas fa-rocket"></i> Generate Forecast</div>', unsafe_allow_html=True)
@@ -1711,7 +1817,7 @@ else:
                 months = result['months']
                 confidence = result['confidence']
                 
-                # Plot with proper legend on right
+                # Plot with proper legend
                 fig = go.Figure()
                 
                 # Historical data trace
@@ -1754,7 +1860,7 @@ else:
                     showlegend=True
                 ))
                 
-                # Apply legend styling (NO TITLE)
+                # Apply legend styling
                 fig = create_legend_chart(fig, "Date", "Sales")
                 
                 st.plotly_chart(fig, use_container_width=True)
@@ -1818,7 +1924,7 @@ else:
             
             st.markdown('</div>', unsafe_allow_html=True)
         
-        # ===== TAB 4: MODEL COMPARISON (WITH LEGEND ON RIGHT) =====
+        # ===== TAB 4: MODEL COMPARISON =====
         elif selected_tab == "🤖 Model Comparison":
             st.markdown('<div class="card">', unsafe_allow_html=True)
             st.markdown('<div class="card-title"><i class="fas fa-code-branch"></i> Model Comparison</div>', unsafe_allow_html=True)
@@ -2022,7 +2128,7 @@ else:
                         st.error(f"AutoML error: {str(e)}")
             st.markdown('</div>', unsafe_allow_html=True)
         
-        # ===== TAB 6: ANOMALY DETECTION (WITH LEGEND ON RIGHT) =====
+        # ===== TAB 6: ANOMALY DETECTION =====
         elif selected_tab == "🔍 Anomaly Detection":
             st.markdown('<div class="card">', unsafe_allow_html=True)
             st.markdown('<div class="card-title"><i class="fas fa-exclamation-triangle"></i> Anomaly Detection</div>', unsafe_allow_html=True)
@@ -2184,7 +2290,7 @@ else:
                         if st.button(f"🗑️ DELETE", key=f"main_delete_{i}", use_container_width=True):
                             st.session_state.selected_forecast_to_delete = original_idx
                             st.session_state.show_delete_confirmation = True
-                            st.experimental_rerun()
+                            st.rerun()
             else:
                 st.info("No forecast history yet. Run a forecast to see results here.")
             
@@ -2198,7 +2304,7 @@ else:
                         users[st.session_state.username]['forecast_history'] = []
                         users[st.session_state.username]['forecast_count'] = 0
                         save_users(users)
-                    st.experimental_rerun()
+                    st.rerun()
             
             st.markdown('</div>', unsafe_allow_html=True)
 
@@ -2214,8 +2320,9 @@ st.markdown(f"""
         <span class="badge"><i class="fas fa-trash"></i> Delete Forecasts</span>
         <span class="badge"><i class="fas fa-palette"></i> Dark Mode</span>
         <span class="badge"><i class="fas fa-broom"></i> Auto Clean</span>
+        <span class="badge"><i class="fas fa-fire"></i> Firebase</span>
     </div>
-    <p><strong>ForecastPro Enterprise</strong> • Version 4.0</p>
+    <p><strong>ForecastPro Enterprise</strong> • Version 5.0 (Firebase)</p>
     <p style="font-size:0.8rem; color:{colors['text_secondary']};">© 2026 • All rights reserved</p>
 </div>
 """, unsafe_allow_html=True)
