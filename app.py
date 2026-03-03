@@ -28,37 +28,6 @@ from sklearn.ensemble import RandomForestRegressor, GradientBoostingRegressor
 import warnings
 warnings.filterwarnings('ignore')
 
-# ===== TEMPORARY DEBUG =====
-st.sidebar.title("🔍 Firebase Debug")
-try:
-    import firebase_admin
-    st.sidebar.write("✅ firebase_admin imported")
-except:
-    st.sidebar.error("❌ firebase_admin not installed")
-
-try:
-    from firebase_admin import credentials, firestore
-    st.sidebar.write("✅ firestore imported")
-except:
-    st.sidebar.error("❌ firestore import failed")
-
-# Check Firebase connection
-if 'db' in locals() or 'db' in globals():
-    try:
-        test = db.collection('users').limit(1).stream()
-        st.sidebar.success("✅ Firebase connected!")
-    except:
-        st.sidebar.error("❌ Firebase connection failed")
-else:
-    st.sidebar.warning("⚠️ db not initialized")
-
-# Check secrets
-try:
-    secrets_test = dict(st.secrets["firebase"])
-    st.sidebar.write("✅ Secrets found")
-    st.sidebar.write(f"Project: {secrets_test.get('project_id')}")
-except:
-    st.sidebar.error("❌ No Firebase secrets")
 
 # Add path for imports
 sys.path.append(os.path.dirname(__file__))
@@ -306,6 +275,32 @@ st.set_page_config(
     layout="wide",
     initial_sidebar_state="expanded"
 )
+
+# ===== TEMPORARY DEBUG ===== (NOW AFTER set_page_config)
+st.sidebar.title("🔍 Firebase Debug")
+try:
+    import firebase_admin
+    st.sidebar.write("✅ firebase_admin imported")
+except:
+    st.sidebar.error("❌ firebase_admin not installed")
+
+try:
+    from firebase_admin import credentials, firestore
+    st.sidebar.write("✅ firestore imported")
+except:
+    st.sidebar.error("❌ firestore import failed")
+
+# Check Firebase connection - will be initialized later
+st.sidebar.info("Firebase not initialized yet - will check after setup")
+
+# Check secrets
+try:
+    secrets_test = dict(st.secrets["firebase"])
+    st.sidebar.write("✅ Secrets found")
+    st.sidebar.write(f"Project: {secrets_test.get('project_id')}")
+except Exception as e:
+    st.sidebar.error(f"❌ No Firebase secrets: {e}")
+# ===== END DEBUG =====
 
 # ===== FIREBASE SETUP =====
 import firebase_admin
