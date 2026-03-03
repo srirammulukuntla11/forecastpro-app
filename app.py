@@ -78,29 +78,25 @@ def load_users():
 
 
 def save_users(users):
-    """Save all users to Firebase (fallback to JSON if Firebase not available)"""
+    """Save all users to Firebase"""
     if is_firebase_available():
         try:
             batch = db.batch()
             users_ref = db.collection('users')
             
-            # Delete all existing documents
-            docs = users_ref.stream()
-            for doc in docs:
-                batch.delete(doc.reference)
-            
-            # Add all users
+            # Update each user individually (don't delete all)
             for username, user_data in users.items():
                 doc_ref = users_ref.document(username)
-                batch.set(doc_ref, user_data)
+                batch.set(doc_ref, user_data, merge=True)  # Use merge to preserve existing data
             
             batch.commit()
+            print(f"✅ Saved {len(users)} users to Firebase")
             return True
         except Exception as e:
-            print(f"Error saving users to Firebase: {e}")
-            # Fallback to JSON
-            return save_users_to_json(users)
+            print(f"❌ Error saving users to Firebase: {e}")
+            return False
     else:
+        # Fallback to JSON
         return save_users_to_json(users)
 
 def get_user(username):
@@ -284,13 +280,22 @@ import firebase_admin
 from firebase_admin import credentials, firestore
 import json
 import os
+import streamlit as st
 
-# Try to get Firebase credentials from different sources
+# Initialize Firebase
 firebase_configured = False
 firebase_secrets = None
 
-# Method 1: Check for firebase-key.json file (local development)
-if os.path.exists('firebase-key.json'):
+# Method 1: Check Streamlit secrets FIRST (for deployed app)
+try:
+    firebase_secrets = dict(st.secrets["firebase"])
+    firebase_configured = True
+    print("✅ Firebase configured using Streamlit secrets")
+except Exception as e:
+    print(f"⚠️ No Streamlit secrets: {e}")
+
+# Method 2: Check for firebase-key.json file (local development)
+if not firebase_configured and os.path.exists('firebase-key.json'):
     try:
         with open('firebase-key.json', 'r') as f:
             firebase_secrets = json.load(f)
@@ -299,15 +304,6 @@ if os.path.exists('firebase-key.json'):
     except Exception as e:
         print(f"⚠️ Error reading firebase-key.json: {e}")
 
-# Method 2: Check Streamlit secrets (cloud deployment)
-if not firebase_configured:
-    try:
-        firebase_secrets = dict(st.secrets["firebase"])
-        firebase_configured = True
-        print("✅ Firebase configured using Streamlit secrets")
-    except Exception as e:
-        print(f"⚠️ Streamlit secrets not available: {e}")
-
 # Initialize Firebase if configured
 if firebase_configured and not firebase_admin._apps:
     try:
@@ -315,6 +311,15 @@ if firebase_configured and not firebase_admin._apps:
         firebase_admin.initialize_app(cred)
         db = firestore.client()
         print("✅ Firebase initialized successfully!")
+        
+        # Test connection by trying to read users
+        try:
+            test = db.collection('users').limit(1).stream()
+            print("✅ Firebase connection test passed")
+        except Exception as e:
+            print(f"⚠️ Firebase connection test failed: {e}")
+            db = None
+            
     except Exception as e:
         print(f"❌ Firebase initialization error: {e}")
         db = None
