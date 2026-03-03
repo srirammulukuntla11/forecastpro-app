@@ -1309,7 +1309,7 @@ else:
                     paper_bgcolor='rgba(0,0,0,0)',
                     plot_bgcolor='rgba(0,0,0,0)'
                 )
-                st.plotly_chart(fig, use_container_width=True)
+                st.plotly_chart(fig, use_container_width=True, key=f"sidebar_chart_{i}_{original_idx}")
                 
                 # Download and Delete buttons
                 col1, col2 = st.columns(2)
@@ -1390,7 +1390,7 @@ else:
                     line=dict(color=colors['primary'], width=2)
                 ))
                 fig = create_legend_chart(fig, "Months", "Value")
-                st.plotly_chart(fig, use_container_width=True)
+                st.plotly_chart(fig, use_container_width=True, key=f"history_chart_{i}_{original_idx}_{int(time.time())}")
                 
                 hist_df = pd.DataFrame({
                     'Period': [f"Month {i+1}" for i in range(len(forecast['values']))],
@@ -1754,7 +1754,7 @@ else:
                     ))
                     fig = create_legend_chart(fig, "", y_col)
                 
-                st.plotly_chart(fig, use_container_width=True)
+                st.plotly_chart(fig, use_container_width=True, key=f"viz_chart_{x_col}_{y_col}_{st.session_state.viz_chart_type}")
                 
                 st.markdown('<div class="export-section">', unsafe_allow_html=True)
                 st.markdown(f'<div class="export-title"><i class="fas fa-download"></i> Export Chart Data</div>', unsafe_allow_html=True)
@@ -1788,7 +1788,7 @@ else:
                         font=dict(color=colors['text']),
                         margin={'t': 30, 'b': 50, 'l': 50, 'r': 30}
                     )
-                    st.plotly_chart(fig_corr, use_container_width=True)
+                    st.plotly_chart(fig_corr, use_container_width=True, key="correlation_heatmap")
                     
                     export_corr, mime_corr, fname_corr = get_export_data(corr, export_format, f"correlation_{datetime.now().strftime('%Y%m%d')}")
                     st.download_button(
@@ -1930,7 +1930,7 @@ else:
                 # Apply legend styling
                 fig = create_legend_chart(fig, "Date", "Sales")
                 
-                st.plotly_chart(fig, use_container_width=True)
+                st.plotly_chart(fig, use_container_width=True, key="forecast_chart")
                 
                 # Metrics
                 col1, col2, col3, col4 = st.columns(4)
@@ -2071,7 +2071,7 @@ else:
                                 ))
                             
                             fig = create_legend_chart(fig, "Date", "Sales")
-                            st.plotly_chart(fig, use_container_width=True)
+                            st.plotly_chart(fig, use_container_width=True, key="comparison_chart")
                             
                             metrics_df = pd.DataFrame({
                                 'Model': list(model_names.values()),
@@ -2273,7 +2273,7 @@ else:
                     
                     fig = create_legend_chart(fig, "Data Point Index", anomaly_col)
                     
-                    st.plotly_chart(fig, use_container_width=True)
+                    st.plotly_chart(fig, use_container_width=True, key=f"anomaly_chart_{anomaly_col}_{method}")
                     
                     # Export results
                     if len(anomaly_idx) > 0:
@@ -2337,7 +2337,7 @@ else:
                             line=dict(color=colors['primary'], width=2)
                         ))
                         fig = create_legend_chart(fig, "Months", "Value")
-                        st.plotly_chart(fig, use_container_width=True)
+                        st.plotly_chart(fig, use_container_width=True, key=f"history_chart_{i}_{original_idx}_{int(time.time())}")
                         
                         hist_df = pd.DataFrame({
                             'Period': [f"Month {i+1}" for i in range(len(forecast['values']))],
@@ -2350,11 +2350,12 @@ else:
                             data=export_data,
                             file_name=fname,
                             mime=mime,
-                            use_container_width=True
+                            use_container_width=True,
+                            key=f"download_hist_{i}_{original_idx}"  # ✅ Added unique key
                         )
                         
                         # Delete button in main history
-                        if st.button(f"🗑️ DELETE", key=f"main_delete_{i}", use_container_width=True):
+                        if st.button(f"🗑️ DELETE", key=f"main_delete_{i}_{original_idx}", use_container_width=True):  # ✅ Fixed key
                             st.session_state.selected_forecast_to_delete = original_idx
                             st.session_state.show_delete_confirmation = True
                             st.rerun()
