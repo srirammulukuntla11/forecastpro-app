@@ -35,41 +35,73 @@ import model
 # FIREBASE SETUP MOVED BELOW (kept for clarity)
 
 # ===== DATABASE FUNCTIONS =====
-def load_users():
-    """Load all users from Firebase"""
-    try:
-        users_ref = db.collection('users')
-        docs = users_ref.stream()
-        
-        users = {}
-        for doc in docs:
-            users[doc.id] = doc.to_dict()
-        return users
-    except Exception as e:
-        print(f"Error loading users: {e}")
-        return {}
 
-def save_users(users):
-    """Save all users to Firebase"""
+def load_users_from_json():
+    """Fallback: Load from users.json"""
     try:
-        batch = db.batch()
-        users_ref = db.collection('users')
-        
-        # Delete all existing documents (optional)
-        docs = users_ref.stream()
-        for doc in docs:
-            batch.delete(doc.reference)
-        
-        # Add all users
-        for username, user_data in users.items():
-            doc_ref = users_ref.document(username)
-            batch.set(doc_ref, user_data)
-        
-        batch.commit()
+        if os.path.exists('users.json'):
+            with open('users.json', 'r') as f:
+                return json.load(f)
+    except Exception as e:
+        print(f"Error loading users.json: {e}")
+    return {}
+
+
+def save_users_to_json(users):
+    """Fallback: Save to users.json"""
+    try:
+        with open('users.json', 'w') as f:
+            json.dump(users, f, indent=2)
         return True
     except Exception as e:
-        print(f"Error saving users: {e}")
+        print(f"Error saving users.json: {e}")
         return False
+
+
+def load_users():
+    """Load all users from Firebase (fallback to JSON if Firebase not available)"""
+    if is_firebase_available():
+        try:
+            users_ref = db.collection('users')
+            docs = users_ref.stream()
+            
+            users = {}
+            for doc in docs:
+                users[doc.id] = doc.to_dict()
+            return users
+        except Exception as e:
+            print(f"Error loading users from Firebase: {e}")
+            # Fallback to JSON
+            return load_users_from_json()
+    else:
+        return load_users_from_json()
+
+
+def save_users(users):
+    """Save all users to Firebase (fallback to JSON if Firebase not available)"""
+    if is_firebase_available():
+        try:
+            batch = db.batch()
+            users_ref = db.collection('users')
+            
+            # Delete all existing documents
+            docs = users_ref.stream()
+            for doc in docs:
+                batch.delete(doc.reference)
+            
+            # Add all users
+            for username, user_data in users.items():
+                doc_ref = users_ref.document(username)
+                batch.set(doc_ref, user_data)
+            
+            batch.commit()
+            return True
+        except Exception as e:
+            print(f"Error saving users to Firebase: {e}")
+            # Fallback to JSON
+            return save_users_to_json(users)
+    else:
+        return save_users_to_json(users)
 
 def get_user(username):
     """Get single user from Firebase"""
@@ -250,25 +282,49 @@ st.set_page_config(
 # ===== FIREBASE SETUP =====
 import firebase_admin
 from firebase_admin import credentials, firestore
+import json
+import os
 
-# Get Firebase secrets
-try:
-    firebase_secrets = dict(st.secrets["firebase"])
-except Exception:
-    st.error("Firebase configuration error. Please check your secrets.")
-    st.stop()
+# Try to get Firebase credentials from different sources
+firebase_configured = False
+firebase_secrets = None
 
-# Initialize Firebase (only once)
-if not firebase_admin._apps:
+# Method 1: Check for firebase-key.json file (local development)
+if os.path.exists('firebase-key.json'):
+    try:
+        with open('firebase-key.json', 'r') as f:
+            firebase_secrets = json.load(f)
+        firebase_configured = True
+        print("✅ Firebase configured using firebase-key.json")
+    except Exception as e:
+        print(f"⚠️ Error reading firebase-key.json: {e}")
+
+# Method 2: Check Streamlit secrets (cloud deployment)
+if not firebase_configured:
+    try:
+        firebase_secrets = dict(st.secrets["firebase"])
+        firebase_configured = True
+        print("✅ Firebase configured using Streamlit secrets")
+    except Exception as e:
+        print(f"⚠️ Streamlit secrets not available: {e}")
+
+# Initialize Firebase if configured
+if firebase_configured and not firebase_admin._apps:
     try:
         cred = credentials.Certificate(firebase_secrets)
         firebase_admin.initialize_app(cred)
-    except Exception:
-        st.error("Failed to initialize Firebase. Please check your configuration.")
-        st.stop()
+        db = firestore.client()
+        print("✅ Firebase initialized successfully!")
+    except Exception as e:
+        print(f"❌ Firebase initialization error: {e}")
+        db = None
+else:
+    print("⚠️ Firebase not configured - running in local mode without database")
+    db = None
 
-# Get Firestore client
-db = firestore.client()
+# Helper function to check if Firebase is available
+def is_firebase_available():
+    return db is not None
 
 # ===== ADMIN CHECK FOR MIGRATION =====
 # Only show migration option to specific admin users
