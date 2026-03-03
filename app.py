@@ -354,6 +354,33 @@ else:
     print("⚠️ Firebase not configured - running in local mode without database")
     db = None
 
+# ===== AFTER FIREBASE SETUP DEBUG =====
+st.sidebar.markdown("---")
+st.sidebar.subheader("🔌 Firebase Connection Status")
+
+if 'db' in locals() or 'db' in globals():
+    try:
+        # Try to read from Firebase
+        test_users = db.collection('users').limit(1).stream()
+        st.sidebar.success("✅ Firebase CONNECTED and working!")
+        
+        # Count users
+        all_users = db.collection('users').stream()
+        user_count = sum(1 for _ in all_users)
+        st.sidebar.write(f"📊 Users in Firebase: {user_count}")
+        
+        # Show first few usernames
+        st.sidebar.write("📋 Sample users:")
+        sample = db.collection('users').limit(3).stream()
+        for doc in sample:
+            st.sidebar.write(f"  • {doc.id}")
+            
+    except Exception as e:
+        st.sidebar.error(f"❌ Firebase connection failed: {e}")
+else:
+    st.sidebar.warning("⚠️ Firebase not initialized - check credentials")
+# ===== END DEBUG =====
+
 # Helper function to check if Firebase is available
 def is_firebase_available():
     return db is not None
