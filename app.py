@@ -312,6 +312,8 @@ import streamlit as st
 # Initialize Firebase
 firebase_configured = False
 firebase_secrets = None
+# ensure db variable exists
+db = None
 
 # Method 1: Check Streamlit secrets FIRST (for deployed app)
 try:
@@ -332,33 +334,38 @@ if not firebase_configured and os.path.exists('firebase-key.json'):
         print(f"⚠️ Error reading firebase-key.json: {e}")
 
 # Initialize Firebase if configured
-if firebase_configured and not firebase_admin._apps:
+if firebase_configured:
     try:
-        cred = credentials.Certificate(firebase_secrets)
-        firebase_admin.initialize_app(cred)
+        # Check if already initialized
+        if not firebase_admin._apps:
+            cred = credentials.Certificate(firebase_secrets)
+            firebase_admin.initialize_app(cred)
+        
+        # Get Firestore client
         db = firestore.client()
         print("✅ Firebase initialized successfully!")
         
-        # Test connection by trying to read users
+        # Test connection
         try:
-            test = db.collection('users').limit(1).stream()
-            print("✅ Firebase connection test passed")
+            # Simple test - just try to access collection
+            test_ref = db.collection('users')
+            print("✅ Firestore client ready")
         except Exception as e:
-            print(f"⚠️ Firebase connection test failed: {e}")
+            print(f"⚠️ Firestore test failed: {e}")
             db = None
             
     except Exception as e:
         print(f"❌ Firebase initialization error: {e}")
         db = None
 else:
-    print("⚠️ Firebase not configured - running in local mode without database")
+    print("⚠️ Firebase not configured - running in local mode")
     db = None
 
 # ===== AFTER FIREBASE SETUP DEBUG =====
 st.sidebar.markdown("---")
 st.sidebar.subheader("🔌 Firebase Connection Status")
 
-if 'db' in locals() or 'db' in globals():
+if db is not None:
     try:
         # Try to read from Firebase
         test_users = db.collection('users').limit(1).stream()
@@ -369,16 +376,12 @@ if 'db' in locals() or 'db' in globals():
         user_count = sum(1 for _ in all_users)
         st.sidebar.write(f"📊 Users in Firebase: {user_count}")
         
-        # Show first few usernames
-        st.sidebar.write("📋 Sample users:")
-        sample = db.collection('users').limit(3).stream()
-        for doc in sample:
-            st.sidebar.write(f"  • {doc.id}")
-            
     except Exception as e:
         st.sidebar.error(f"❌ Firebase connection failed: {e}")
+        st.sidebar.error(f"Error type: {type(e).__name__}")
 else:
-    st.sidebar.warning("⚠️ Firebase not initialized - check credentials")
+    st.sidebar.error("❌ db is None - Firebase not initialized")
+    st.sidebar.info("Check your Firebase credentials and permissions")
 # ===== END DEBUG =====
 
 # Helper function to check if Firebase is available
