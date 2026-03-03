@@ -358,6 +358,27 @@ else:
 def is_firebase_available():
     return db is not None
 
+# ===== AFTER FIREBASE SETUP DEBUG =====
+st.sidebar.markdown("---")
+st.sidebar.subheader("🔌 Firebase Connection Status")
+
+if 'db' in locals() or 'db' in globals():
+    try:
+        # Try to read from Firebase
+        test_users = db.collection('users').limit(1).stream()
+        st.sidebar.success("✅ Firebase CONNECTED and working!")
+        
+        # Count users
+        all_users = db.collection('users').stream()
+        user_count = sum(1 for _ in all_users)
+        st.sidebar.write(f"📊 Users in Firebase: {user_count}")
+        
+    except Exception as e:
+        st.sidebar.error(f"❌ Firebase connection failed: {e}")
+else:
+    st.sidebar.warning("⚠️ Firebase not initialized - check credentials")
+# ===== END DEBUG =====
+
 # ===== ADMIN CHECK FOR MIGRATION =====
 # Only show migration option to specific admin users
 ADMIN_USERS = ["sriram11", "jashu"]  # Add your admin usernames here
