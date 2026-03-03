@@ -269,6 +269,27 @@ if not firebase_admin._apps:
 
 # Get Firestore client
 db = firestore.client()
+
+# ===== ADMIN CHECK FOR MIGRATION =====
+# Only show migration option to specific admin users
+ADMIN_USERS = ["sriram11", "jashu"]  # Add your admin usernames here
+
+if st.session_state.get('logged_in', False) and st.session_state.username in ADMIN_USERS:
+    if os.path.exists('users.json') and not st.session_state.get('migration_done', False):
+        with st.sidebar:
+            st.markdown("---")
+            st.markdown("### 🔥 Firebase Migration (Admin Only)")
+            st.info("Your old users.json file is still here. Do you want to migrate to Firebase?")
+            if st.button("🚀 Migrate to Firebase", key="migrate_btn"):
+                with st.spinner("Migrating data..."):
+                    if migrate_json_to_firebase():
+                        # Rename old file as backup
+                        os.rename('users.json', 'users.json.backup')
+                        st.session_state.migration_done = True
+                        st.success("Migration complete! users.json renamed to users.json.backup")
+                        st.experimental_rerun()
+            st.markdown("---")
+
 # ===== INITIALIZE SESSION STATE =====
 if 'logged_in' not in st.session_state:
     st.session_state.logged_in = False
@@ -295,21 +316,8 @@ if 'logged_in' not in st.session_state:
     st.session_state.data_cleaned = False
     st.session_state.migration_done = False
 
-# ===== CHECK FOR MIGRATION =====
-if not st.session_state.migration_done and os.path.exists('users.json'):
-    with st.sidebar:
-        st.markdown("---")
-        st.markdown("### 🔥 Firebase Migration")
-        st.info("Your old users.json file is still here. Do you want to migrate to Firebase?")
-        if st.button("🚀 Migrate to Firebase", key="migrate_btn"):
-            with st.spinner("Migrating data..."):
-                if migrate_json_to_firebase():
-                    # Rename old file as backup
-                    os.rename('users.json', 'users.json.backup')
-                    st.session_state.migration_done = True
-                    st.success("Migration complete! users.json renamed to users.json.backup")
-                    st.rerun()
-        st.markdown("---")
+# migration prompt is now restricted to admin users above
+
 
 # ===== AUTHENTICATION FUNCTIONS (UPDATED FOR FIREBASE) =====
 def hash_password(password):
