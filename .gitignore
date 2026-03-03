@@ -1,0 +1,6 @@
+firebase-key.json
+users.json
+__pycache__/
+*.pyc
+.vscode/
+.streamlit/secrets.toml
